@@ -43,6 +43,8 @@ export class AprobarRechazarComponent implements OnInit {
 
   ngOnInit(): void {
 
+    console.log(this.data);
+
     //Busca una sesión======================
     const sesion$ = this._validaRechazaService.obtieneSesion().subscribe(
       {
@@ -110,13 +112,13 @@ export class AprobarRechazarComponent implements OnInit {
         //recorro y agrego la extensión del archivo a el modelo de archivos
         archivos.forEach(element => {
           if(element['nombreArchivo']){
-            //console.log(element['nombreArchivo']);
-            //console.log(element['nombreArchivo'].split(".").pop());
+            ////console.log(element['nombreArchivo']);
+            ////console.log(element['nombreArchivo'].split(".").pop());
             element['extension'] = element['nombreArchivo'].split(".").pop();
           }
         });
         this.modeloArchivo = archivos;
-        console.log(archivos);
+        ////console.log(archivos);
        },
       error: (errores) => {
         console.error(errores);
@@ -133,88 +135,65 @@ export class AprobarRechazarComponent implements OnInit {
   }
 
   guardar(id:number){
-
-    if(this.data.modulo == 'vicerrector'){
-      const guardarAprobacionVicerrector$ = this._validaRechazaService.guardarValidacionVicerrector(
-        id,
-        this.idPerson
-        ).subscribe(
-        {
-          next: ()=>{
-            this._validaRechazaService.recargarTabla.next(1);
-          },
-          error:(errores) => {
-            console.error(errores);
-          },
-          complete: () => {
-            this.openSnackBar('Partida extraordinaria aprobada.');
-          }
-        }
-      );
-      this.suscripciones.push(guardarAprobacionVicerrector$);
+   // console.log('Puede autorizar: ' + this.data.valor.puedeAutorizar);
+    if(this.data.valor.puedeAutorizar==0){
+      this.openSnackBar('Usted no puede autorizar por este Importe');
     }
-    //-----------------------------------------------------------------------------------------
-    if(this.data.modulo == 'DTI'){
-      const guardarAprobacionDTI$ = this._validaRechazaService.guardarValidacionDTI(
-        id,
-        this.idPerson
-        ).subscribe(
-        {
-          next: ()=>{
-            this._validaRechazaService.recargarTabla.next(1);
-          },
-          error:(errores) => {
-            console.error(errores);
-          },
-          complete: () => {
-            this.openSnackBar('Partida extraordinaria aprobada.');
-          }
-        }
-      );
-      this.suscripciones.push(guardarAprobacionDTI$);
-    }
-    //-----------------------------------------------------------------------------------------
-    if(this.data.modulo == 'rector'){
+    else
+    {
+      if(this.data.valor.puedeAutorizar==1){
 
-      const guardarAprobacionRectorAdministrativo$ = this._validaRechazaService.guardarValidacionRectorAdmin(
-        id,
-        this.idPerson
-        ).subscribe(
-        {
-          next: () =>{
-            this._validaRechazaService.recargarTabla.next(1);
-          },
-          error:(errores)=>{
-            console.error(errores);
-          },
-          complete: () =>{
-            this.openSnackBar('Partida extraordinaria aprobada.');
-          }
-        }
-      );
-      this.suscripciones.push(guardarAprobacionRectorAdministrativo$);
-      //Cuando no ha Validado el Vicerrector automaticamente lo Validamos aquí. ||||||||||||||||||
-        if(this.data.valor.validaDirectorVicerrector==0){
-          const aprobarVicerrectorAutomaticamente$ = this._validaRechazaService.guardarValidacionVicerrector(
+        if(this.data.modulo == 'rector'){
+
+          const guardarAprobacionRectorAdministrativo$ = this._validaRechazaService.guardarValidacionRectorAdmin(
             id,
             this.idPerson
             ).subscribe(
             {
-              next: ()=>{
+              next: () =>{
                 this._validaRechazaService.recargarTabla.next(1);
               },
-              error:(errores) => {
+              error:(errores)=>{
                 console.error(errores);
               },
-              complete: () => {
+              complete: () =>{
+                this.openSnackBar('Partida extraordinaria aprobada.');
               }
             }
           );
-          this.suscripciones.push(aprobarVicerrectorAutomaticamente$);
+          this.suscripciones.push(guardarAprobacionRectorAdministrativo$);
+          //Cuando no ha Validado el Vicerrector automaticamente lo Validamos aquí. ||||||||||||||||||
+
+           //2022-10-14  Se quitó porque nos solicitó Héctor Húgo que no autorice las partidas que no han aprobado los Directores/vicerrectores
+          // if(this.data.valor.validaDirectorVicerrector==0){
+            //   const aprobarVicerrectorAutomaticamente$ = this._validaRechazaService.guardarValidacionVicerrector(
+            //     id,
+            //     this.idPerson
+            //     ).subscribe(
+            //     {
+            //       next: ()=>{
+            //         this._validaRechazaService.recargarTabla.next(1);
+            //       },
+            //       error:(errores) => {
+            //         console.error(errores);
+            //       },
+            //       complete: () => {
+            //       }
+            //     }
+            //   );
+            //   this.suscripciones.push(aprobarVicerrectorAutomaticamente$);
+            // }
+          //|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         }
-      //|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+        //-----------------------------------------------------------------------------------------
+      }
+      else
+      {
+        //no puede entrar aquí "según"
+      }
     }
-    //-----------------------------------------------------------------------------------------
+
+
 
 
 
@@ -245,124 +224,138 @@ export class AprobarRechazarComponent implements OnInit {
 
 
   rechazar(id:number){
-    let motivo:string = '';
 
-    const dialogRef$ = this.dialog.open(RechazarComponent,{
-      width: '50%',
-      disableClose: true,
-      autoFocus: true,
-      data: {motivo: ''},
-    });
+    if(this.data.valor.puedeAutorizar==0){
+      this.openSnackBar('Usted no puede rechazar por este Importe');
+    }
+    else
+    {
+      if(this.data.valor.puedeAutorizar==1){
+        let motivo:string = '';
 
-    dialogRef$.afterClosed().subscribe(result =>{
-      if(result == undefined)
-      {
-        console.log('Se canceló el Rechazo');
+        const dialogRef$ = this.dialog.open(RechazarComponent,{
+          width: '50%',
+          disableClose: true,
+          autoFocus: true,
+          data: {motivo: ''},
+        });
+
+        dialogRef$.afterClosed().subscribe(result =>{
+          if(result == undefined)
+          {
+            //console.log('Se canceló el Rechazo');
+          }
+          else
+          {
+            motivo = result;
+
+            //console.log('Se va a rechazar la partida con el id: ' + id);
+
+
+            //-----------------------------------------------------------------------------------------
+            if(this.data.modulo == 'vicerrector'){
+              const motivoRechazoVicerrector$ = this._validaRechazaService.motivoRechazoVicerrector(
+                id,
+                motivo,
+                this.idPerson).subscribe(
+                {
+                  next: () =>{
+                    //Entra al servicio de catalogos y en recargarTabla le envía un 1
+                    //con este le estamos diciendo qie recargue la tabla.
+                    this._validaRechazaService.recargarTabla.next(1);
+                  },
+                  error: (errores) =>{
+                    console.error(errores);
+                  },
+                  complete: () =>{
+                    this.openSnackBar('Partida extraordinaria rechazada.');
+                  }
+                }
+              );
+                this.suscripciones.push(motivoRechazoVicerrector$);
+
+            }
+            //-----------------------------------------------------------------------------------------
+            if(this.data.modulo == 'DTI'){
+              const motivoRechazoDTI$ = this._validaRechazaService.motivoRechazoDTI(
+                id,
+                motivo,
+                this.idPerson
+                ).subscribe(
+                {
+                  next: () =>{
+                    //Entra al servicio de catalogos y en recargarTabla le envía un 1
+                    //con este le estamos diciendo qie recargue la tabla.
+                    this._validaRechazaService.recargarTabla.next(1);
+                  },
+                  error: (errores) =>{
+                    console.error(errores);
+                  },
+                  complete: () =>{
+                    this.openSnackBar('Partida extraordinaria rechazada.');
+                  }
+                }
+              );
+                this.suscripciones.push(motivoRechazoDTI$);
+            }
+            //-----------------------------------------------------------------------------------------
+            if(this.data.modulo == 'rector'){
+              const motivoRechazoRector$ = this._validaRechazaService.motivoRechazoRectorAdmin(
+                id,
+                motivo,
+                this.idPerson
+                ).subscribe(
+                {
+                  next: () => {
+                    this._validaRechazaService.recargarTabla.next(1);
+                  },
+                  error: (errores) =>{
+                    console.error(errores);
+                  },
+                  complete: () =>{
+                    this.openSnackBar('Partida extraordinaria rechazada.');
+                  }
+                }
+              );
+              this.suscripciones.push(motivoRechazoRector$);
+              //Cuando no ha Validado el Vicerrector automaticamente lo Validamos aquí. ||||||||||||||||||
+              if(this.data.valor.validaDirectorVicerrector==0){
+                const motivoRechazoVicerrector$ = this._validaRechazaService.motivoRechazoVicerrector(
+                  id,
+                  motivo,
+                  this.idPerson).subscribe(
+                  {
+                    next: () =>{
+                      this._validaRechazaService.recargarTabla.next(1);
+                    },
+                    error: (errores) =>{
+                      console.error(errores);
+                    },
+                    complete: () =>{
+                      this.openSnackBar('Partida extraordinaria rechazada.');
+                    }
+                  }
+                );
+                this.suscripciones.push(motivoRechazoVicerrector$);
+              }
+              //||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+            }
+            //-----------------------------------------------------------------------------------------
+            if(this.data.modulo == 'compras'){
+
+            }
+
+
+          }
+        });
       }
       else
       {
-        motivo = result;
-
-        console.log('Se va a rechazar la partida con el id: ' + id);
-
-
-        //-----------------------------------------------------------------------------------------
-        if(this.data.modulo == 'vicerrector'){
-          const motivoRechazoVicerrector$ = this._validaRechazaService.motivoRechazoVicerrector(
-            id,
-            motivo,
-            this.idPerson).subscribe(
-            {
-              next: () =>{
-                //Entra al servicio de catalogos y en recargarTabla le envía un 1
-                //con este le estamos diciendo qie recargue la tabla.
-                this._validaRechazaService.recargarTabla.next(1);
-              },
-              error: (errores) =>{
-                console.error(errores);
-              },
-              complete: () =>{
-                this.openSnackBar('Partida extraordinaria rechazada.');
-              }
-            }
-          );
-            this.suscripciones.push(motivoRechazoVicerrector$);
-
-        }
-        //-----------------------------------------------------------------------------------------
-        if(this.data.modulo == 'DTI'){
-          const motivoRechazoDTI$ = this._validaRechazaService.motivoRechazoDTI(
-            id,
-            motivo,
-            this.idPerson
-            ).subscribe(
-            {
-              next: () =>{
-                //Entra al servicio de catalogos y en recargarTabla le envía un 1
-                //con este le estamos diciendo qie recargue la tabla.
-                this._validaRechazaService.recargarTabla.next(1);
-              },
-              error: (errores) =>{
-                console.error(errores);
-              },
-              complete: () =>{
-                this.openSnackBar('Partida extraordinaria rechazada.');
-              }
-            }
-          );
-            this.suscripciones.push(motivoRechazoDTI$);
-        }
-        //-----------------------------------------------------------------------------------------
-        if(this.data.modulo == 'rector'){
-          const motivoRechazoRector$ = this._validaRechazaService.motivoRechazoRectorAdmin(
-            id,
-            motivo,
-            this.idPerson
-            ).subscribe(
-            {
-              next: () => {
-                this._validaRechazaService.recargarTabla.next(1);
-              },
-              error: (errores) =>{
-                console.error(errores);
-              },
-              complete: () =>{
-                this.openSnackBar('Partida extraordinaria rechazada.');
-              }
-            }
-          );
-          this.suscripciones.push(motivoRechazoRector$);
-          //Cuando no ha Validado el Vicerrector automaticamente lo Validamos aquí. ||||||||||||||||||
-          if(this.data.valor.validaDirectorVicerrector==0){
-            const motivoRechazoVicerrector$ = this._validaRechazaService.motivoRechazoVicerrector(
-              id,
-              motivo,
-              this.idPerson).subscribe(
-              {
-                next: () =>{
-                  this._validaRechazaService.recargarTabla.next(1);
-                },
-                error: (errores) =>{
-                  console.error(errores);
-                },
-                complete: () =>{
-                  this.openSnackBar('Partida extraordinaria rechazada.');
-                }
-              }
-            );
-            this.suscripciones.push(motivoRechazoVicerrector$);
-          }
-          //||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-
-        }
-        //-----------------------------------------------------------------------------------------
-        if(this.data.modulo == 'compras'){
-
-        }
-
-
+        //No hay permisos con otro valor que sea 0 o 1 pero igual lo pongo :)
       }
-    });
+    }
+
   }
 
   montoFinal(){
@@ -378,11 +371,11 @@ export class AprobarRechazarComponent implements OnInit {
     /*dialogRef$.afterClosed().subscribe(result =>{
       if(result == undefined)
       {
-        console.log('Se cerró la ventana sin guardar nada.');
+        //console.log('Se cerró la ventana sin guardar nada.');
       }
       else
       {
-        console.log("Aquí se va a ejecutar el Guardar con monto final.");
+        //console.log("Aquí se va a ejecutar el Guardar con monto final.");
       }
     });*/
   }
